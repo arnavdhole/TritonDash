@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>School dashboard</title>
+<style>
+  /* Light theme (default) */
+  :root {
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --surface-2: #F1EFE8;
+    --border: #E5E3DC;
+    --border-strong: #D3D1C7;
+    --border-soft: #EEEDE7;
+    --text: #1F1F1E;
+    --text-muted: #6B6B66;
+    --text-faint: #888780;
+    --text-hint: #B8B6AE;
+    --accent-blue: #378ADD;
+    --accent-blue-bg: #E6F1FB;
+    --accent-blue-text: #0C447C;
+    --accent-orange: #D85A30;
+    --accent-orange-bg: #FAECE7;
+    --accent-orange-text: #712B13;
+    --danger: #E24B4A;
+    --danger-bg: #FCEBEB;
+    --danger-border: #F0C0C0;
+    --danger-text: #791F1F;
+    --danger-row-bg: #FFFFFF;
+    --danger-row-border: #F5D0D0;
+    --danger-row-hover: #FFF8F8;
+    --warn-bg: #FAEEDA;
+    --warn-text: #633806;
+    --neutral-bg: #F1EFE8;
+    --neutral-text: #5F5E5A;
+    --btn-primary-bg: #1F1F1E;
+    --btn-primary-text: #FFFFFF;
+    --btn-primary-hover: #444441;
+    --modal-backdrop: rgba(0,0,0,0.4);
+    --drag-handle: #C5C3BB;
+    --checked-bg: #1F1F1E;
+  }
+
+  [data-theme="dark"] {
+    --bg: #151513;
+    --surface: #1F1F1E;
+    --surface-2: #2A2A28;
+    --border: #333330;
+    --border-strong: #444441;
+    --border-soft: #2A2A28;
+    --text: #F1EFE8;
+    --text-muted: #A8A69E;
+    --text-faint: #888780;
+    --text-hint: #5F5E5A;
+    --accent-blue: #85B7EB;
+    --accent-blue-bg: #0C447C;
+    --accent-blue-text: #B5D4F4;
+    --accent-orange: #F0997B;
+    --accent-orange-bg: #712B13;
+    --accent-orange-text: #F5C4B3;
+    --danger: #F09595;
+    --danger-bg: #501313;
+    --danger-border: #791F1F;
+    --danger-text: #F7C1C1;
+    --danger-row-bg: #2A1818;
+    --danger-row-border: #6B2020;
+    --danger-row-hover: #3A2020;
+    --warn-bg: #633806;
+    --warn-text: #FAC775;
+    --neutral-bg: #2A2A28;
+    --neutral-text: #A8A69E;
+    --btn-primary-bg: #F1EFE8;
+    --btn-primary-text: #1F1F1E;
+    --btn-primary-hover: #D3D1C7;
+    --modal-backdrop: rgba(0,0,0,0.6);
+    --drag-handle: #5F5E5A;
+    --checked-bg: #F1EFE8;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.15s, color 0.15s;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .header-text h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .header-text .subtitle { font-size: 13px; color: var(--text-muted); }
+
+  .header-actions { display: flex; gap: 8px; align-items: flex-start; }
+  .refresh-btn {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .refresh-btn:hover { color: var(--text); background: var(--surface-2); }
+  .refresh-btn:disabled { opacity: 0.6; cursor: default; }
+
+  .theme-toggle {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .theme-toggle:hover { border-color: var(--border-strong); color: var(--text); }
+
+  h2 { font-size: 13px; font-weight: 500; color: var(--text-muted); margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.4px; display: flex; align-items: center; justify-content: space-between; }
+  .h2-btn { font-family: inherit; font-size: 11px; font-weight: 500; color: var(--accent-blue); background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; text-transform: none; letter-spacing: 0; }
+  .h2-btn:hover { background: var(--accent-blue-bg); }
+  .h2-btn.edit-mode { color: var(--accent-orange); }
+  .h2-btn.edit-mode:hover { background: var(--accent-orange-bg); }
+
+  .section { margin-bottom: 24px; }
+
+  .tag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .tag-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tag-card.class-tag { border-left: 3px solid var(--accent-blue); border-radius: 0 8px 8px 0; }
+  .tag-card.extra-tag { border-left: 3px solid var(--accent-orange); border-radius: 0 8px 8px 0; }
+  .tag-info { flex: 1; min-width: 0; }
+  .tag-name { font-size: 13px; font-weight: 500; }
+  .tag-count { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+  .tag-delete { background: none; border: none; color: var(--text-hint); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; display: none; }
+  .tag-delete:hover { color: var(--danger); background: var(--danger-bg); }
+  .editing .tag-delete { display: block; }
+
+  .add-tag-card {
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .add-tag-card:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+  .editing .add-tag-card { display: flex; }
+
+  .add-form {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+  .add-form input, .add-form select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+  }
+  .add-form input:focus, .add-form select:focus { border-color: var(--accent-blue); }
+  .add-form input[type="date"] { color-scheme: light dark; }
+  .add-btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: var(--btn-primary-hover); }
+
+  /* Overdue banner */
+  .overdue-section {
+    background: var(--danger-bg);
+    border: 0.5px solid var(--danger-border);
+    border-left: 3px solid var(--danger);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+  }
+  .overdue-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .overdue-title { font-size: 12px; font-weight: 500; color: var(--danger-text); text-transform: uppercase; letter-spacing: 0.4px; }
+  .overdue-section .task-row { background: var(--danger-row-bg); border-color: var(--danger-row-border); }
+  .overdue-section .task-row:hover { background: var(--danger-row-hover); }
+
+  .split-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .split-col {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 120px;
+  }
+  .split-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .split-title { font-size: 13px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .split-count { font-size: 12px; color: var(--text-faint); }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tab {
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+
+  .secondary-list {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .task-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border-soft);
+    border-radius: 6px;
+    background: var(--surface);
+    margin-bottom: 4px;
+    cursor: grab;
+  }
+  .task-row:last-child { margin-bottom: 0; }
+  .task-row:hover { border-color: var(--border-strong); }
+  .task-row.done .task-name-text { text-decoration: line-through; color: var(--text-faint); }
+  .task-row.dragging { opacity: 0.4; }
+  .task-row.drop-above { border-top: 2px solid var(--accent-blue); }
+  .task-row.drop-below { border-bottom: 2px solid var(--accent-blue); }
+
+  .drag-handle {
+    color: var(--drag-handle);
+    cursor: grab;
+    font-size: 14px;
+    user-select: none;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  .task-check {
+    width: 16px; height: 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .task-check.checked { background: var(--checked-bg); border-color: var(--checked-bg); }
+  .task-check.checked::after { content: "✓"; color: var(--surface); font-size: 11px; }
+
+  .task-name-wrap { min-width: 0; overflow: hidden; }
+  .task-name-text {
+    font-size: 13px;
+    cursor: text;
+    padding: 2px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+  .task-name-text:hover { background: var(--surface-2); }
+  .task-name-input {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 2px 4px;
+    border: 1px solid var(--accent-blue);
+    border-radius: 3px;
+    outline: none;
+    width: 100%;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .pill-class { background: var(--accent-blue-bg); color: var(--accent-blue-text); }
+  .pill-extra { background: var(--accent-orange-bg); color: var(--accent-orange-text); }
+  .pill-today { background: var(--danger-bg); color: var(--danger-text); }
+  .pill-week { background: var(--warn-bg); color: var(--warn-text); }
+  .pill-later { background: var(--neutral-bg); color: var(--neutral-text); }
+  .pill-overdue { background: var(--danger); color: #FFFFFF; font-weight: 500; }
+
+  .inline-date, .inline-select {
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--accent-blue);
+    border-radius: 3px;
+    outline: none;
+    background: var(--surface);
+    color: var(--text);
+    color-scheme: light dark;
+  }
+
+  .task-delete {
+    background: none;
+    border: none;
+    color: var(--text-hint);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .task-delete:hover { color: var(--danger); background: var(--danger-bg); }
+
+  .empty { padding: 20px 12px; text-align: center; color: var(--text-hint); font-size: 12px; }
+
+  .stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+  .stat-num { font-weight: 500; color: var(--text); }
+
+  .footer-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+  .footer-btn {
+    font-family: inherit; font-size: 12px; color: var(--text-faint);
+    background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px;
+  }
+  .footer-btn:hover { color: var(--text); background: var(--surface-2); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: var(--modal-backdrop);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    border: 0.5px solid var(--border);
+  }
+  .modal h3 { margin: 0 0 12px; font-size: 15px; font-weight: 500; }
+  .modal input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: 6px;
+    outline: none;
+    margin-bottom: 12px;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .modal input:focus { border-color: var(--accent-blue); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn {
+    font-family: inherit; font-size: 13px; padding: 8px 14px;
+    border-radius: 6px; cursor: pointer; border: none;
+  }
+  .modal-btn.primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); font-weight: 500; }
+  .modal-btn.secondary { background: var(--surface-2); color: var(--text); }
+
+  @media (max-width: 700px) {
+    body { padding: 16px; }
+    .add-form { grid-template-columns: 1fr 1fr; }
+    .add-form .task-input { grid-column: 1 / -1; }
+    .add-btn { grid-column: 1 / -1; }
+    .split-view { grid-template-columns: 1fr; }
+    .task-row { grid-template-columns: auto auto 1fr auto auto; gap: 8px; }
+    .task-row .pill-tag-col { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-row">
+    <div class="header-text">
+      <h1>School dashboard</h1>
+      <div class="subtitle">Click a task to edit. Drag to reorder. Changes save automatically. <span id="canvas-sync-status"></span></div>
+    </div>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refresh-btn" title="Check Canvas for new assignments">Refresh</button>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+        <span id="theme-icon">☀</span>
+        <span id="theme-label">Light</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="section">
+    <h2>
+      Classes
+      <button class="h2-btn" id="edit-classes">Edit</button>
+    </h2>
+    <div class="tag-grid" id="class-tags"></div>
+
+    <h2>
+      Extracurriculars
+      <button class="h2-btn" id="edit-extras">Edit</button>
+    </h2>
+    <div class="tag-grid" id="extra-tags"></div>
+  </div>
+
+  <div class="section">
+    <h2>Add task</h2>
+    <div class="add-form">
+      <input type="text" class="task-input" id="new-task" placeholder="What needs doing?" />
+      <select id="new-tag"></select>
+      <input type="date" id="new-date" />
+      <button class="add-btn" id="add-btn">Add</button>
+    </div>
+  </div>
+
+  <div class="overdue-section" id="overdue-section" style="display: none;">
+    <div class="overdue-header">
+      <span class="overdue-title" id="overdue-title">Overdue</span>
+    </div>
+    <div id="overdue-list"></div>
+  </div>
+
+  <div class="split-view">
+    <div class="split-col">
+      <div class="split-header">
+        <span class="split-title">Due today</span>
+        <span class="split-count" id="today-count"></span>
+      </div>
+      <div id="today-list"></div>
+    </div>
+    <div class="split-col">
+      <div class="split-header">
+        <span class="split-title">Due in 7 days</span>
+        <span class="split-count" id="week-count"></span>
+      </div>
+      <div id="week-list"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="tabs">
+      <div class="tab active" data-filter="scheduled">Scheduled</div>
+      <div class="tab" data-filter="done">Done</div>
+      <div class="tab" data-filter="all">All open</div>
+    </div>
+    <div class="secondary-list" id="secondary-list"></div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="footer-btn" id="export-btn">Export backup</button>
+    <button class="footer-btn" id="import-btn">Import backup</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" />
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Add tag</h3>
+    <input type="text" id="modal-input" placeholder="Tag name" />
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+      <button class="modal-btn primary" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="canvas_tasks.js" onerror="void 0"></script>
+<script>
+  const STORAGE_TASKS = "school_dashboard_tasks";
+  const STORAGE_CATEGORIES = "school_dashboard_categories";
+  const STORAGE_THEME = "school_dashboard_theme";
+  const STORAGE_DISMISSED = "school_dashboard_canvas_dismissed";
+
+  const DEFAULT_CATEGORIES = {
+    class: [],
+    extra: []
+  };
+
+  let tasks = [];
+  let categories = { class: [], extra: [] };
+  let currentSecondaryTab = "scheduled";
+  let editingGroup = null;
+  let modalMode = null;
+  let draggedId = null;
+
+  function todayISO() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().split("T")[0];
+  }
+
+  function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dateStr + "T00:00:00");
+    return Math.round((due - today) / (1000 * 60 * 60 * 24));
+  }
+
+  function dueLabel(dateStr) {
+    const d = daysUntil(dateStr);
+    if (d === null) return { text: "No date", cls: "pill-later" };
+    if (d < 0) return { text: Math.abs(d) + "d overdue", cls: "pill-overdue" };
+    if (d === 0) return { text: "Today", cls: "pill-today" };
+    if (d === 1) return { text: "Tomorrow", cls: "pill-week" };
+    if (d <= 7) {
+      const dayName = new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" });
+      return { text: dayName, cls: "pill-week" };
+    }
+    return { text: new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }), cls: "pill-later" };
+  }
+
+  function tagType(tag) {
+    if (categories.class.includes(tag)) return "class";
+    return "extra";
+  }
+
+  // Theme handling
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    const icon = document.getElementById("theme-icon");
+    const label = document.getElementById("theme-label");
+    if (theme === "dark") {
+      icon.textContent = "☾";
+      label.textContent = "Dark";
+    } else {
+      icon.textContent = "☀";
+      label.textContent = "Light";
+    }
+    try { localStorage.setItem(STORAGE_THEME, theme); } catch (e) {}
+  }
+
+  function loadTheme() {
+    try {
+      const saved = localStorage.getItem(STORAGE_THEME);
+      if (saved === "dark" || saved === "light") {
+        applyTheme(saved);
+        return;
+      }
+    } catch (e) {}
+    // Default to system preference
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(prefersDark ? "dark" : "light");
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme");
+    applyTheme(current === "dark" ? "light" : "dark");
+  }
+
+  function loadDismissed() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_DISMISSED)) || []; }
+    catch (e) { return []; }
+  }
+
+  function dismissCanvasId(canvasId) {
+    const list = loadDismissed();
+    if (list.includes(canvasId)) return;
+    list.push(canvasId);
+    try { localStorage.setItem(STORAGE_DISMISSED, JSON.stringify(list)); }
+    catch (e) { console.error(e); }
+  }
+
+  // Merges tasks from canvas_tasks.js. Fields you edited by hand are left alone,
+  // and tasks you deleted stay deleted.
+  function mergeCanvasTasks() {
+    const feed = window.CANVAS_TASKS;
+    if (!feed || !Array.isArray(feed.tasks)) return;
+
+    const dismissed = new Set(loadDismissed());
+    let tasksChanged = false;
+    let categoriesChanged = false;
+
+    (feed.tags || []).forEach(tag => {
+      if (!categories.class.includes(tag) && !categories.extra.includes(tag)) {
+        categories.class.push(tag);
+        categoriesChanged = true;
+      }
+    });
+
+    feed.tasks.forEach(ct => {
+      if (dismissed.has(ct.canvasId)) return;
+
+      if (!categories.class.includes(ct.tag) && !categories.extra.includes(ct.tag)) {
+        categories.class.push(ct.tag);
+        categoriesChanged = true;
+      }
+
+      const existing = tasks.find(t => t.canvasId === ct.canvasId);
+      if (!existing) {
+        tasks.push({
+          id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
+          name: ct.name, tag: ct.tag, date: ct.date,
+          done: false,
+          order: getMaxOrder() + 1,
+          created: new Date().toISOString(),
+          canvasId: ct.canvasId,
+          canvasName: ct.name, canvasDate: ct.date, canvasTag: ct.tag,
+          url: ct.url
+        });
+        tasksChanged = true;
+        return;
+      }
+
+      [["name", "canvasName"], ["date", "canvasDate"], ["tag", "canvasTag"]].forEach(([field, snap]) => {
+        if (existing[snap] === ct[field]) return;
+        if (existing[field] === existing[snap]) existing[field] = ct[field];
+        existing[snap] = ct[field];
+        tasksChanged = true;
+      });
+      if (existing.url !== ct.url) { existing.url = ct.url; tasksChanged = true; }
+    });
+
+    if (tasksChanged) saveTasks();
+    if (categoriesChanged) saveCategories();
+
+    const status = document.getElementById("canvas-sync-status");
+    if (status && feed.generated) {
+      const when = new Date(feed.generated).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      status.textContent = "Canvas synced " + when + ".";
+    }
+  }
+
+  const REFRESH_URL = "http://127.0.0.1:8765/refresh";
+
+  function reloadFeedScript() {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement("script");
+      el.src = "canvas_tasks.js?t=" + Date.now();
+      el.onload = () => { el.remove(); resolve(); };
+      el.onerror = () => { el.remove(); reject(new Error("feed")); };
+      document.head.appendChild(el);
+    });
+  }
+
+  // The PrairieLearn Chrome extension (extension/) answers this when installed.
+  // Resolves to null without the extension, otherwise to { ok, error }.
+  function refreshPrairieLearn() {
+    if (document.documentElement.dataset.plExtension !== "1") return Promise.resolve(null);
+    return new Promise(resolve => {
+      const finish = result => {
+        document.removeEventListener("dashboard:pl-done", onDone);
+        clearTimeout(timer);
+        resolve(result);
+      };
+      const onDone = e => finish(e.detail || { ok: false, error: "No answer" });
+      const timer = setTimeout(() => finish({ ok: false, error: "Timed out" }), 60000);
+      document.addEventListener("dashboard:pl-done", onDone);
+      document.dispatchEvent(new CustomEvent("dashboard:pl-refresh"));
+    });
+  }
+
+  // Turns the extension's per-site results into a short note for the status line.
+  function plNote(result) {
+    if (!result) return "";
+    const names = { prairielearn: "PrairieLearn", gradescope: "Gradescope" };
+    const sources = result.sources || { prairielearn: result };
+    const notes = [];
+    Object.keys(sources).forEach(key => {
+      const src = sources[key];
+      if (!src || src.ok) return;
+      const name = names[key] || key;
+      if (/not signed in/i.test(src.error || "")) {
+        notes.push(name + " needs a sign-in. Log in to it in Chrome and refresh again.");
+      } else if (/context invalidated|receiving end|Timed out|No answer/i.test(src.error || "")) {
+        notes.push("The extension is not responding. Reload this page and try again.");
+      } else {
+        notes.push(name + " did not sync (" + (src.error || "unknown error") + ").");
+      }
+    });
+    return notes.length ? " " + notes.join(" ") : "";
+  }
+
+  async function refreshFromCanvas() {
+    const btn = document.getElementById("refresh-btn");
+    const status = document.getElementById("canvas-sync-status");
+    const before = tasks.length;
+    btn.disabled = true;
+    btn.textContent = "Refreshing...";
+    status.textContent = "";
+    try {
+      const pl = await refreshPrairieLearn();
+      const res = await fetch(REFRESH_URL, { method: "POST" });
+      const body = await res.json();
+      if (!body.ok) throw new Error(body.error || "Refresh failed");
+      await reloadFeedScript();
+      mergeCanvasTasks();
+      render();
+      const added = tasks.length - before;
+      const note = added > 0 ? added + " new task" + (added === 1 ? "" : "s") + " added." : "No new assignments.";
+      status.textContent += " " + note + plNote(pl);
+    } catch (err) {
+      status.textContent = "Refresh helper is not running. Start it with scripts/dashboard_server.py.";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Refresh";
+    }
+  }
+
+  function loadData() {
+    try {
+      const t = localStorage.getItem(STORAGE_TASKS);
+      tasks = t ? JSON.parse(t) : [];
+      tasks.forEach((t, i) => { if (t.order === undefined) t.order = i; });
+    } catch (e) { tasks = []; }
+
+    try {
+      const c = localStorage.getItem(STORAGE_CATEGORIES);
+      categories = c ? JSON.parse(c) : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    } catch (e) {
+      categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    }
+    mergeCanvasTasks();
+    render();
+  }
+
+  function saveTasks() {
+    try { localStorage.setItem(STORAGE_TASKS, JSON.stringify(tasks)); }
+    catch (e) { console.error(e); }
+  }
+
+  function saveCategories() {
+    try { localStorage.setItem(STORAGE_CATEGORIES, JSON.stringify(categories)); }
+    catch (e) { console.error(e); }
+  }
+
+  function getOverdue() {
+    const todayDate = new Date(todayISO() + "T00:00:00");
+    return tasks.filter(t => !t.done && t.date && new Date(t.date + "T00:00:00") < todayDate);
+  }
+  function getToday() {
+    const todayStr = todayISO();
+    return tasks.filter(t => !t.done && t.date === todayStr);
+  }
+  function getInSevenDays() {
+    return tasks.filter(t => {
+      if (t.done || !t.date) return false;
+      const d = daysUntil(t.date);
+      return d > 0 && d <= 7;
+    });
+  }
+  function getScheduled() {
+    return tasks.filter(t => {
+      if (t.done) return false;
+      if (!t.date) return true;
+      const d = daysUntil(t.date);
+      return d > 7;
+    });
+  }
+  function getDone() { return tasks.filter(t => t.done); }
+  function getAllOpen() { return tasks.filter(t => !t.done); }
+
+  function sortByOrder(list) {
+    return list.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderTagCards(group, containerId, cardClass) {
+    const container = document.getElementById(containerId);
+    const open = tasks.filter(t => !t.done);
+    const cards = categories[group].map(tag => {
+      const count = open.filter(t => t.tag === tag).length;
+      return '<div class="tag-card ' + cardClass + '">' +
+        '<div class="tag-info">' +
+          '<div class="tag-name">' + escapeHtml(tag) + '</div>' +
+          '<div class="tag-count">' + count + ' open</div>' +
+        '</div>' +
+        '<button class="tag-delete" data-group="' + group + '" data-tag="' + escapeHtml(tag) + '" title="Delete tag">×</button>' +
+      '</div>';
+    }).join("");
+    const addCard = '<div class="add-tag-card" data-group="' + group + '">+ Add tag</div>';
+    container.innerHTML = cards + addCard;
+  }
+
+  function renderTagSelect() {
+    const sel = document.getElementById("new-tag");
+    const prev = sel.value;
+    const classOpts = categories.class.map(t => '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>').join("");
+    const extraOpts = categories.extra.map(t => '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>').join("");
+    let html = "";
+    if (categories.class.length) html += '<optgroup label="Classes">' + classOpts + '</optgroup>';
+    if (categories.extra.length) html += '<optgroup label="Extracurriculars">' + extraOpts + '</optgroup>';
+    sel.innerHTML = html;
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  }
+
+  function renderStats() {
+    const today = getToday().length;
+    const week = getInSevenDays().length;
+    const overdue = getOverdue().length;
+    const scheduled = getScheduled().length;
+    document.getElementById("stats").innerHTML =
+      '<span><span class="stat-num">' + today + '</span> due today</span>' +
+      '<span><span class="stat-num">' + week + '</span> in 7 days</span>' +
+      '<span><span class="stat-num">' + overdue + '</span> overdue</span>' +
+      '<span><span class="stat-num">' + scheduled + '</span> scheduled</span>';
+  }
+
+  function taskRowHTML(t) {
+    const due = dueLabel(t.date);
+    const tagCls = tagType(t.tag) === "class" ? "pill-class" : "pill-extra";
+    return '<div class="task-row ' + (t.done ? "done" : "") + '" data-id="' + t.id + '" draggable="true">' +
+      '<span class="drag-handle">⋮⋮</span>' +
+      '<div class="task-check ' + (t.done ? "checked" : "") + '" data-action="toggle" data-id="' + t.id + '"></div>' +
+      '<div class="task-name-wrap">' +
+        '<span class="task-name-text" data-action="edit-name" data-id="' + t.id + '">' + escapeHtml(t.name) + '</span>' +
+      '</div>' +
+      '<span class="pill ' + tagCls + ' pill-tag-col" data-action="edit-tag" data-id="' + t.id + '">' + escapeHtml(t.tag) + '</span>' +
+      '<span class="pill ' + due.cls + '" data-action="edit-date" data-id="' + t.id + '">' + due.text + '</span>' +
+      '<button class="task-delete" data-action="delete" data-id="' + t.id + '" title="Delete">×</button>' +
+    '</div>';
+  }
+
+  function renderTaskList(containerId, taskList, emptyMsg) {
+    const sorted = sortByOrder(taskList);
+    const container = document.getElementById(containerId);
+    if (sorted.length === 0) {
+      container.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
+      return;
+    }
+    container.innerHTML = sorted.map(taskRowHTML).join("");
+  }
+
+  function renderOverdue() {
+    const overdue = sortByOrder(getOverdue());
+    const section = document.getElementById("overdue-section");
+    if (overdue.length === 0) {
+      section.style.display = "none";
+      return;
+    }
+    section.style.display = "block";
+    document.getElementById("overdue-title").textContent = "Overdue · " + overdue.length;
+    document.getElementById("overdue-list").innerHTML = overdue.map(taskRowHTML).join("");
+  }
+
+  function renderSplit() {
+    const today = getToday();
+    const week = getInSevenDays();
+    document.getElementById("today-count").textContent = today.length > 0 ? today.length : "";
+    document.getElementById("week-count").textContent = week.length > 0 ? week.length : "";
+    renderTaskList("today-list", today, "Nothing due today.");
+    renderTaskList("week-list", week, "Nothing due in 7 days.");
+  }
+
+  function renderSecondary() {
+    let list, emptyMsg;
+    if (currentSecondaryTab === "scheduled") { list = getScheduled(); emptyMsg = "Nothing scheduled."; }
+    else if (currentSecondaryTab === "done") { list = getDone(); emptyMsg = "Nothing done yet."; }
+    else { list = getAllOpen(); emptyMsg = "No open tasks."; }
+    renderTaskList("secondary-list", list, emptyMsg);
+  }
+
+  function render() {
+    renderTagCards("class", "class-tags", "class-tag");
+    renderTagCards("extra", "extra-tags", "extra-tag");
+    renderTagSelect();
+    renderStats();
+    renderOverdue();
+    renderSplit();
+    renderSecondary();
+
+    document.getElementById("class-tags").classList.toggle("editing", editingGroup === "class");
+    document.getElementById("extra-tags").classList.toggle("editing", editingGroup === "extra");
+    document.getElementById("edit-classes").textContent = editingGroup === "class" ? "Done" : "Edit";
+    document.getElementById("edit-classes").classList.toggle("edit-mode", editingGroup === "class");
+    document.getElementById("edit-extras").textContent = editingGroup === "extra" ? "Done" : "Edit";
+    document.getElementById("edit-extras").classList.toggle("edit-mode", editingGroup === "extra");
+  }
+
+  function getMaxOrder() {
+    return tasks.reduce((max, t) => Math.max(max, t.order || 0), -1);
+  }
+
+  function addTask() {
+    const name = document.getElementById("new-task").value.trim();
+    const tag = document.getElementById("new-tag").value;
+    const date = document.getElementById("new-date").value || todayISO();
+    if (!name || !tag) return;
+
+    tasks.push({
+      id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
+      name, tag, date,
+      done: false,
+      order: getMaxOrder() + 1,
+      created: new Date().toISOString()
+    });
+
+    document.getElementById("new-task").value = "";
+    document.getElementById("new-date").value = todayISO();
+    saveTasks();
+    render();
+  }
+
+  function toggleTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      task.done = !task.done;
+      saveTasks();
+      render();
+    }
+  }
+
+  function deleteTask(id) {
+    const gone = tasks.find(t => t.id === id);
+    if (gone && gone.canvasId) dismissCanvasId(gone.canvasId);
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    render();
+  }
+
+  function startEditName(id, element) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const input = document.createElement("input");
+    input.className = "task-name-input";
+    input.value = task.name;
+    element.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const finish = (save) => {
+      if (save) {
+        const val = input.value.trim();
+        if (val) task.name = val;
+        saveTasks();
+      }
+      render();
+    };
+
+    input.addEventListener("blur", () => finish(true));
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      else if (e.key === "Escape") { finish(false); }
+    });
+  }
+
+  function startEditDate(id, element) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const input = document.createElement("input");
+    input.type = "date";
+    input.className = "inline-date";
+    input.value = task.date || "";
+    element.replaceWith(input);
+    input.focus();
+
+    const finish = (save) => {
+      if (save) {
+        task.date = input.value || null;
+        saveTasks();
+      }
+      render();
+    };
+
+    input.addEventListener("change", () => finish(true));
+    input.addEventListener("blur", () => finish(true));
+    input.addEventListener("keydown", e => {
+      if (e.key === "Escape") finish(false);
+    });
+  }
+
+  function startEditTag(id, element) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const select = document.createElement("select");
+    select.className = "inline-select";
+    select.style.cursor = "pointer";
+    let html = "";
+    if (categories.class.length) {
+      html += '<optgroup label="Classes">';
+      categories.class.forEach(t => {
+        html += '<option value="' + escapeHtml(t) + '"' + (t === task.tag ? ' selected' : '') + '>' + escapeHtml(t) + '</option>';
+      });
+      html += '</optgroup>';
+    }
+    if (categories.extra.length) {
+      html += '<optgroup label="Extracurriculars">';
+      categories.extra.forEach(t => {
+        html += '<option value="' + escapeHtml(t) + '"' + (t === task.tag ? ' selected' : '') + '>' + escapeHtml(t) + '</option>';
+      });
+      html += '</optgroup>';
+    }
+    select.innerHTML = html;
+    element.replaceWith(select);
+    select.focus();
+
+    const finish = (save) => {
+      if (save) {
+        task.tag = select.value;
+        saveTasks();
+      }
+      render();
+    };
+
+    select.addEventListener("change", () => finish(true));
+    select.addEventListener("blur", () => finish(true));
+    select.addEventListener("keydown", e => {
+      if (e.key === "Escape") finish(false);
+    });
+  }
+
+  function setupDragHandlers(container) {
+    container.addEventListener("dragstart", e => {
+      const row = e.target.closest(".task-row");
+      if (!row) return;
+      draggedId = row.dataset.id;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    container.addEventListener("dragend", e => {
+      const row = e.target.closest(".task-row");
+      if (row) row.classList.remove("dragging");
+      container.querySelectorAll(".drop-above, .drop-below").forEach(el => {
+        el.classList.remove("drop-above", "drop-below");
+      });
+      draggedId = null;
+    });
+
+    container.addEventListener("dragover", e => {
+      e.preventDefault();
+      const row = e.target.closest(".task-row");
+      if (!row || row.dataset.id === draggedId) return;
+      container.querySelectorAll(".drop-above, .drop-below").forEach(el => {
+        el.classList.remove("drop-above", "drop-below");
+      });
+      const rect = row.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      if (e.clientY < midpoint) row.classList.add("drop-above");
+      else row.classList.add("drop-below");
+    });
+
+    container.addEventListener("drop", e => {
+      e.preventDefault();
+      const row = e.target.closest(".task-row");
+      if (!row || !draggedId || row.dataset.id === draggedId) return;
+      const dropAbove = row.classList.contains("drop-above");
+      reorderTasks(draggedId, row.dataset.id, dropAbove);
+    });
+  }
+
+  function reorderTasks(draggedIdVal, targetId, insertBefore) {
+    const draggedTask = tasks.find(t => t.id === draggedIdVal);
+    const targetTask = tasks.find(t => t.id === targetId);
+    if (!draggedTask || !targetTask) return;
+
+    const targetOrder = targetTask.order;
+    const newOrder = insertBefore ? targetOrder - 0.5 : targetOrder + 0.5;
+    draggedTask.order = newOrder;
+
+    const sorted = tasks.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    sorted.forEach((t, i) => { t.order = i; });
+
+    saveTasks();
+    render();
+  }
+
+  function openModal(group) {
+    modalMode = { group };
+    document.getElementById("modal-title").textContent = group === "class" ? "Add class" : "Add extracurricular";
+    document.getElementById("modal-input").value = "";
+    document.getElementById("modal").classList.add("open");
+    setTimeout(() => document.getElementById("modal-input").focus(), 50);
+  }
+
+  function closeModal() {
+    document.getElementById("modal").classList.remove("open");
+    modalMode = null;
+  }
+
+  function saveModal() {
+    if (!modalMode) return;
+    const val = document.getElementById("modal-input").value.trim();
+    if (!val) return;
+    const group = modalMode.group;
+    const otherGroup = group === "class" ? "extra" : "class";
+    if (categories[group].includes(val) || categories[otherGroup].includes(val)) {
+      alert("Tag already exists");
+      return;
+    }
+    categories[group].push(val);
+    saveCategories();
+    closeModal();
+    render();
+  }
+
+  function deleteTag(group, tag) {
+    const inUse = tasks.filter(t => t.tag === tag && !t.done).length;
+    const msg = inUse > 0
+      ? '"' + tag + '" has ' + inUse + ' open task(s). Delete anyway? Tasks keep the tag but it won\'t appear in the sidebar.'
+      : 'Delete "' + tag + '"?';
+    if (!confirm(msg)) return;
+    categories[group] = categories[group].filter(t => t !== tag);
+    saveCategories();
+    render();
+  }
+
+  function exportBackup() {
+    const data = { tasks, categories, exported: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dashboard-backup-" + todayISO() + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importBackup(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.tasks || !data.categories) throw new Error("Invalid backup");
+        if (!confirm("This replaces all current tasks and tags. Continue?")) return;
+        tasks = data.tasks;
+        categories = data.categories;
+        saveTasks();
+        saveCategories();
+        render();
+      } catch (err) {
+        alert("Could not read backup file.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function handleTaskAction(e) {
+    const action = e.target.dataset.action;
+    const id = e.target.dataset.id;
+    if (!action || !id) return;
+
+    if (action === "toggle") toggleTask(id);
+    else if (action === "delete") deleteTask(id);
+    else if (action === "edit-name") startEditName(id, e.target);
+    else if (action === "edit-date") startEditDate(id, e.target);
+    else if (action === "edit-tag") startEditTag(id, e.target);
+  }
+
+  // Event handlers
+  document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+  document.getElementById("refresh-btn").addEventListener("click", refreshFromCanvas);
+  document.getElementById("add-btn").addEventListener("click", addTask);
+  document.getElementById("new-task").addEventListener("keydown", e => {
+    if (e.key === "Enter") addTask();
+  });
+
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      currentSecondaryTab = tab.dataset.filter;
+      renderSecondary();
+    });
+  });
+
+  ["overdue-list", "today-list", "week-list", "secondary-list"].forEach(id => {
+    const container = document.getElementById(id);
+    container.addEventListener("click", handleTaskAction);
+    setupDragHandlers(container);
+  });
+
+  document.getElementById("edit-classes").addEventListener("click", () => {
+    editingGroup = editingGroup === "class" ? null : "class";
+    render();
+  });
+  document.getElementById("edit-extras").addEventListener("click", () => {
+    editingGroup = editingGroup === "extra" ? null : "extra";
+    render();
+  });
+
+  document.getElementById("class-tags").addEventListener("click", e => {
+    if (e.target.classList.contains("add-tag-card")) openModal("class");
+    else if (e.target.classList.contains("tag-delete")) {
+      deleteTag(e.target.dataset.group, e.target.dataset.tag);
+    }
+  });
+  document.getElementById("extra-tags").addEventListener("click", e => {
+    if (e.target.classList.contains("add-tag-card")) openModal("extra");
+    else if (e.target.classList.contains("tag-delete")) {
+      deleteTag(e.target.dataset.group, e.target.dataset.tag);
+    }
+  });
+
+  document.getElementById("modal-cancel").addEventListener("click", closeModal);
+  document.getElementById("modal-save").addEventListener("click", saveModal);
+  document.getElementById("modal-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") saveModal();
+    else if (e.key === "Escape") closeModal();
+  });
+  document.getElementById("modal").addEventListener("click", e => {
+    if (e.target.id === "modal") closeModal();
+  });
+
+  document.getElementById("export-btn").addEventListener("click", exportBackup);
+  document.getElementById("import-btn").addEventListener("click", () => {
+    document.getElementById("import-file").click();
+  });
+  document.getElementById("import-file").addEventListener("change", e => {
+    if (e.target.files[0]) importBackup(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  loadTheme();
+  document.getElementById("new-date").value = todayISO();
+  loadData();
+</script>
+</body>
+</html>

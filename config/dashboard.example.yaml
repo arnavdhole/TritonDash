@@ -1,0 +1,35 @@
+# Settings for the dashboard export (python -m src.dashboard_export).
+# To customize, copy this file to config/dashboard.yaml. That copy stays on your
+# machine and is never committed.
+
+# Deadlines are shown on their date in this timezone.
+timezone: America/Los_Angeles
+
+# Skip items due more than this many days ago.
+days_behind: 7
+
+# Canvas calendar events (lectures, office hours) are skipped unless this is true.
+include_calendar_events: false
+
+# Dashboard tag for each course. Canvas names courses like CSE100_FA26_001,
+# and by default that becomes the tag "CSE 100". Override any course here,
+# using the course code without spaces.
+course_tags:
+  # CSE100: "CSE 100"
+  # MATH18: "Linear Algebra"
+
+# Calendar feeds to pull. "env" names the .env variable that holds the feed URL.
+# A feed with "tag" puts every item under that one tag, which suits a second school.
+# Other feeds derive tags from the course code. "id_prefix" keeps task IDs unique.
+sources:
+  - env: CANVAS_ICAL_URL
+  # - env: CANVAS_ICAL_URL_COMMUNITY_COLLEGE
+  #   tag: Community College
+  #   id_prefix: "cc:"
+
+# Tags the dashboard creates up front, even before any tasks exist.
+ensure_tags: []
+
+# Regexes removed from every task title, then titles are cut to max_title_length.
+title_strip: []
+max_title_length: 70

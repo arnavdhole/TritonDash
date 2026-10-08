@@ -1,0 +1,25 @@
+# Secrets and personal settings
+.env
+config/dashboard.yaml
+config/credentials.json
+config/token.json
+.claude/
+
+# Personal data generated on each machine
+data/*_tasks.json
+data/processed_pdfs.json
+data/syllabi_pdf/*.pdf
+data/syllabi_pdf/*.yaml
+dashboard/canvas_tasks.js
+logs/
+
+# Python and OS
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+.DS_Store

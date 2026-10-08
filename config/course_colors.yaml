@@ -1,0 +1,12 @@
+# Maps Canvas course_id (integer) to Google Calendar colorId (1-11).
+# Run "python -m src.main" once to see course IDs in logs, then fill in below.
+#
+# Google Calendar color IDs:
+#  1=Lavender  2=Sage      3=Grape    4=Flamingo  5=Banana
+#  6=Tangerine 7=Peacock   8=Graphite 9=Blueberry 10=Basil  11=Tomato
+
+course_colors:
+  # 12345: 9    # CS 101 → Blueberry
+  # 12346: 4    # MATH 201 → Flamingo
+
+default_color: 7   # Peacock for unmapped courses

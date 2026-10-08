@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Dashboard Sync",
+  "version": "0.3.1",
+  "description": "Reads your PrairieLearn and Gradescope deadlines with your existing logins and sends them to the local school dashboard.",
+  "permissions": [
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://us.prairielearn.com/*",
+    "https://www.gradescope.com/*",
+    "http://127.0.0.1:8765/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "parse.js",
+      "background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:8765/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "dashboard-sync@local",
+      "strict_min_version": "121.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  }
+}
