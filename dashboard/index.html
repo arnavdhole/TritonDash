@@ -100,17 +100,10 @@
 
   /* Cards */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; }
-  .card + .card, .stats + .card, .card + .view, .view + .card { margin-top: 14px; }
+  .card + .card, .card + .view, .view + .card { margin-top: 14px; }
   .card h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.01em; display: flex; align-items: center; gap: 8px; }
   .count { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
   .count:empty { display: none; }
-
-  /* Stats */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
-  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; box-shadow: var(--shadow); }
-  .stat .num { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
-  .stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .stat.alert .num { color: var(--danger); }
 
   /* Quick add */
   .quick-add { display: grid; grid-template-columns: 1fr 170px 150px auto; gap: 8px; align-items: center; padding: 12px; }
@@ -177,9 +170,10 @@
   .check:hover { border-color: var(--ok); }
   .check.checked { background: var(--ok); border-color: var(--ok); }
   .check.checked::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
-  .task-name { flex: 1; min-width: 0; cursor: text; overflow-wrap: anywhere; }
+  .task-name { flex: 1; min-width: 0; cursor: text; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .task.done .task-name { color: var(--hint); text-decoration: line-through; }
   .task-name-input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--focus); border-radius: 6px; padding: 3px 8px; }
+  .link-slot { flex: none; width: 18px; text-align: center; }
   .open-link { flex: none; color: var(--hint); text-decoration: none; font-size: 13px; padding: 0 2px; }
   .open-link:hover { color: var(--focus); }
   .x { flex: none; border: 0; background: transparent; color: var(--hint); font-size: 17px; line-height: 1; padding: 2px 6px; border-radius: 6px; opacity: 0; }
@@ -202,7 +196,8 @@
   .banner .count { background: var(--surface); color: var(--danger); }
   .banner .task:hover { background: var(--surface); }
   .banner .task + .task { border-color: var(--danger-border); }
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; }
+  .split .card { min-width: 0; }
   .split .card { margin-top: 0; }
   .split h2, .tabs-card h2 { margin-bottom: 8px; }
   .tabs { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
@@ -218,13 +213,13 @@
   .fchip .n { margin-left: 5px; opacity: 0.7; font-variant-numeric: tabular-nums; }
   .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hint); margin: 18px 2px 8px; }
   .section-label:first-of-type { margin-top: 0; }
-  .cards-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 2px; border-radius: 14px; }
+  .cards-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 2px; border-radius: 14px; }
   .cards-row.drop-end { outline: 2px dashed var(--border-strong); outline-offset: 2px; }
-  .class-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; border-top: 3px solid var(--class); }
+  .class-card { min-width: 0; position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; border-top: 3px solid var(--class); }
   .class-card.extra { border-top-color: var(--extra); }
   .class-card.other { border-top-color: var(--hint); }
   .card-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px 6px; cursor: grab; }
-  .card-head .name { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .card-head .name { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .badge { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
   .badge.overdue { background: var(--danger-bg); color: var(--danger); }
   .badge.open { background: var(--surface-2); color: var(--muted); }
@@ -274,11 +269,10 @@
     .actions { width: 100%; }
     .seg { flex: 1 1 100%; }
     .seg button { flex: 1; }
-    .stats { grid-template-columns: repeat(2, 1fr); }
     .quick-add { grid-template-columns: 1fr 1fr; }
     .quick-add .field:first-child, .quick-add .btn { grid-column: 1 / -1; }
-    .split { grid-template-columns: 1fr; }
-    .cards-row { grid-template-columns: 1fr; }
+    .split { grid-template-columns: minmax(0, 1fr); }
+    .cards-row { grid-template-columns: minmax(0, 1fr); }
     .card-form, .day-form { grid-template-columns: 1fr 1fr; }
     .card-form .field:first-child, .day-form .field:first-child { grid-column: 1 / -1; }
     .task .pill.tag-class, .task .pill.tag-extra { display: none; }
@@ -311,8 +305,6 @@
       <button class="btn" id="theme-toggle" data-action="theme" title="Toggle theme"><span id="theme-icon">☀</span> <span id="theme-label">Light</span></button>
     </div>
   </header>
-
-  <section class="stats" id="stats"></section>
 
   <form class="card quick-add" data-form="quick-add">
     <input class="field" type="text" name="name" placeholder="Add a task" autocomplete="off">
@@ -739,10 +731,10 @@
     return '<div class="task ' + (t.done ? "done" : "") + '" data-id="' + t.id + '"' + (opts.grip ? ' draggable="true"' : "") + '>' +
       (opts.grip ? '<span class="grip" title="Drag to reorder">⋮⋮</span>' : "") +
       '<button class="check ' + (t.done ? "checked" : "") + '" data-action="toggle" data-id="' + t.id + '" aria-label="Mark done"></button>' +
-      '<span class="task-name" data-action="edit-name" data-id="' + t.id + '">' + escapeHtml(t.name) + '</span>' +
-      (link ? '<a class="open-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer" title="Open in the original site">↗</a>' : "") +
+      '<span class="task-name" data-action="edit-name" data-id="' + t.id + '" title="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</span>' +
       (opts.showTag === false ? "" : '<span class="pill tag-' + tagType(t.tag) + '" data-action="edit-tag" data-id="' + t.id + '">' + escapeHtml(t.tag) + '</span>') +
       '<span class="pill ' + due.cls + '" data-action="edit-date" data-id="' + t.id + '">' + due.text + '</span>' +
+      '<span class="link-slot">' + (link ? '<a class="open-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer" title="Open in the original site">↗</a>' : "") + '</span>' +
       '<button class="x" data-action="delete" data-id="' + t.id + '" aria-label="Delete task">×</button>' +
     '</div>';
   }
@@ -764,18 +756,6 @@
     sel.innerHTML = tagOptionsHTML(null);
     if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
     else if (tagFilter) sel.value = tagFilter;
-  }
-
-  function renderStats() {
-    const overdue = getOverdue().length;
-    const tiles = [
-      { n: overdue, label: "Overdue", alert: overdue > 0 },
-      { n: getToday().length, label: "Due today" },
-      { n: getNext7().length, label: "Next 7 days" },
-      { n: getOpen().length, label: "Open in total" }
-    ];
-    $("stats").innerHTML = tiles.map(t =>
-      '<div class="stat ' + (t.alert ? "alert" : "") + '"><div class="num">' + t.n + '</div><div class="label">' + t.label + "</div></div>").join("");
   }
 
   function renderTags() {
@@ -982,7 +962,6 @@
   /* ---------- render ---------- */
 
   function render() {
-    renderStats();
     renderTags();
     renderTagSelect();
     document.querySelectorAll(".view").forEach(v => { v.hidden = v.id !== "view-" + ui.view; });

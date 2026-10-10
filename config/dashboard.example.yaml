@@ -32,4 +32,4 @@ ensure_tags: []
 
 # Regexes removed from every task title, then titles are cut to max_title_length.
 title_strip: []
-max_title_length: 70
+max_title_length: 200

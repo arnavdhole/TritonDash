@@ -51,7 +51,7 @@ def _load_config() -> dict:
         "sources": [{"env": "CANVAS_ICAL_URL"}],
         "ensure_tags": [],
         "title_strip": [],
-        "max_title_length": 70,
+        "max_title_length": 200,
     }
     # config/dashboard.yaml is personal and untracked; the example is the fallback.
     path = CONFIG_PATH if CONFIG_PATH.exists() else EXAMPLE_CONFIG_PATH
