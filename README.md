@@ -29,10 +29,20 @@ Treat this link like a password. Anyone who has it can read your calendar. It go
 
 ## Using the dashboard
 
-- Click a task name to rename it, the date to change it, or the tag to move it.
-- Drag tasks to reorder them.
+Pick a view at the top right.
+
+- **Timeline** shows what is overdue, due today, and due in the next 7 days, with Later, Done, and All open underneath. Drag tasks to reorder them.
+- **By class** gives each class and extracurricular its own card, with its tasks sorted by due date. The chips at the top slice every card by time: All open, Overdue, Today, Next 7 days, Later, and Done. Under All open, each card folds far-off tasks into a "+ n later" link. Each card has a quick add.
+- **Calendar** shows a month grid. Click a day to see its tasks and add one. Drag a task to another day to change its due date.
+
+Working with tasks and tags:
+
+- Click a task name to rename it, the date to change it, or the tag to move it. Click the circle to check it off.
+- Click a class or extracurricular chip to show only that one in every view. Click it again to clear the filter.
+- Press **Edit** above the chips to rename a class or extracurricular in place, or delete one. Drag chips, or drag a card header in the By class view, to reorder them. Drop a chip into the other row to turn a class into an extracurricular, or the reverse.
+- Renaming keeps working with Canvas. If you rename `CSE 100` to `Data Structures`, new Canvas tasks for that course land under the new name.
 - Canvas tasks keep your edits. A task you rename keeps its name, a task you check off stays done, and a task you delete does not come back.
-- Canvas tags come from course codes, so `CSE100_FA26_001` becomes **CSE 100**. Rename any of them in `config/dashboard.yaml`.
+- Canvas tags come from course codes, so `CSE100_FA26_001` becomes **CSE 100**.
 
 ## Settings
 
@@ -62,7 +72,7 @@ The parsers were written against one student's account, and these sites can chan
 
 ## Other schools
 
-The dashboard works with any Canvas school. Use your own Canvas calendar feed. Set `timezone` in `config/dashboard.yaml` and `TIMEZONE` in `.env` to match your school.
+The dashboard works with any Canvas school. Use your own Canvas calendar feed. Set `timezone` in `config/dashboard.yaml` to match your school.
 
 ## Windows and Linux
 
@@ -93,10 +103,6 @@ Schedule `.venv/bin/python -m src.dashboard_export` with cron or Task Scheduler 
 | PrairieLearn or Gradescope "needs a sign-in" | Sign in to that site in the same browser as the extension, then refresh. |
 | "The extension is not responding" | Reload the dashboard page. This happens after the extension is reloaded. |
 | My tasks vanished | You are probably on a different address or browser. Use **Export backup** in the old one and **Import backup** in the new one. |
-
-## Optional: Google Calendar sync
-
-The project also contains an older sync that copies deadlines to Google Calendar. It needs a Google Cloud project, so it is not part of the quick start. Install the extra packages with `pip install -r requirements-gcal.txt`, follow `scripts/setup_oauth.py`, and run `python -m src.main`.
 
 ## Development
 

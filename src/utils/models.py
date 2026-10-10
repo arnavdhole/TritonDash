@@ -6,9 +6,7 @@ from typing import Optional
 @dataclass
 class CanvasEvent:
     """
-    Unified event model. All ingestion sources produce this before syncing to GCal.
-
-    source values: "assignment" | "todo" | "syllabus_html" | "syllabus_pdf" | "manual"
+    One deadline read from a Canvas calendar feed.
     """
     title: str
     due_datetime: Optional[datetime]        # None → all-day event on due_date
@@ -22,11 +20,3 @@ class CanvasEvent:
     submission_types: list = field(default_factory=list)
     assignment_id: Optional[int] = None    # Canvas assignment ID; used for dedup
     external_id: Optional[str] = None      # Stable ID for manual/PDF entries
-
-
-@dataclass
-class SyncResult:
-    created: int = 0
-    updated: int = 0
-    skipped: int = 0
-    errors: list = field(default_factory=list)

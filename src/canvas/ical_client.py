@@ -1,5 +1,5 @@
 """
-Canvas iCal feed client — token-free alternative to the Canvas REST API.
+Canvas iCal feed client. Needs no API token.
 
 Canvas exposes a secret .ics URL for every user's calendar that contains
 all assignments, due dates, and calendar events. No API token required.
@@ -10,7 +10,7 @@ How to find your iCal URL:
      (looks like a chain-link or signal icon, labeled "Calendar Feed")
   3. Copy the full URL — it looks like:
      https://canvas.youruniversity.edu/feeds/calendars/user_XXXXXXX.ics
-  4. Paste it into .env as CANVAS_ICAL_URL
+  4. Paste it into .env as CANVAS_ICAL_URL (extra feeds use their own variable names)
 """
 
 import logging
