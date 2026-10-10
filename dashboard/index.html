@@ -211,16 +211,20 @@
   .fchip:hover { color: var(--text); }
   .fchip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
   .fchip .n { margin-left: 5px; opacity: 0.7; font-variant-numeric: tabular-nums; }
-  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hint); margin: 18px 2px 8px; }
-  .section-label:first-of-type { margin-top: 0; }
-  .cards-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 2px; border-radius: 14px; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hint); margin: 0 2px 8px; }
+  .groups { display: flex; gap: 14px; align-items: flex-start; }
+  .groups + .groups { margin-top: 18px; }
+  .groups.stacked { flex-direction: column; align-items: stretch; gap: 18px; }
+  .group { min-width: 0; }
+  .cards-row { display: flex; flex-wrap: wrap; gap: 14px; padding: 2px; border-radius: 14px; min-height: 40px; }
+  .cards-row .class-card { flex: 1 1 calc((100% - (var(--c, 1) - 1) * 14px) / var(--c, 1)); min-width: 0; }
   .cards-row.drop-end { outline: 2px dashed var(--border-strong); outline-offset: 2px; }
   .class-card { min-width: 0; position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; border-top: 3px solid var(--class); }
   .class-card.extra { border-top-color: var(--extra); }
   .class-card.other { border-top-color: var(--hint); }
-  .card-head { display: flex; align-items: center; gap: 8px; padding: 12px 16px 6px; cursor: grab; }
+  .card-head { display: flex; align-items: center; gap: 6px; padding: 11px 12px 6px 14px; cursor: grab; }
   .card-head .name { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .badge { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+  .badge { font-size: 11px; white-space: nowrap; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
   .badge.overdue { background: var(--danger-bg); color: var(--danger); }
   .badge.open { background: var(--surface-2); color: var(--muted); }
   .card-body { padding: 0 10px 8px; }
@@ -264,6 +268,17 @@
 
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); z-index: 10; }
 
+  /* In cards the open-link and delete buttons float over the row on hover, so names keep the space. */
+  @media (min-width: 701px) {
+    .class-card .task { gap: 8px; padding: 7px 4px; }
+    .class-card .task .link-slot, .class-card .task .x {
+      position: absolute; top: 50%; transform: translateY(-50%); opacity: 0; background: var(--surface-2); height: 24px; line-height: 24px;
+    }
+    .class-card .task .x { right: 4px; }
+    .class-card .task .link-slot { right: 30px; width: 24px; border-radius: 6px; }
+    .class-card .task:hover .link-slot, .class-card .task:focus-within .link-slot { opacity: 1; }
+  }
+
   @media (max-width: 700px) {
     .app { padding: 18px 14px 40px; }
     .actions { width: 100%; }
@@ -272,7 +287,6 @@
     .quick-add { grid-template-columns: 1fr 1fr; }
     .quick-add .field:first-child, .quick-add .btn { grid-column: 1 / -1; }
     .split { grid-template-columns: minmax(0, 1fr); }
-    .cards-row { grid-template-columns: minmax(0, 1fr); }
     .card-form, .day-form { grid-template-columns: 1fr 1fr; }
     .card-form .field:first-child, .day-form .field:first-child { grid-column: 1 / -1; }
     .task .pill.tag-class, .task .pill.tag-extra { display: none; }
@@ -874,6 +888,44 @@
     "</article>";
   }
 
+  /* ---------- by class: fitting the cards on screen ---------- */
+
+  const CARD_MIN = 235, CARD_GAP = 14;
+  let lastMaxCols = 0;
+
+  function maxColsFor(width) { return Math.max(1, Math.floor((width + CARD_GAP) / (CARD_MIN + CARD_GAP))); }
+
+  // Columns for n cards: the fewest rows, then the fewest empty slots, then the most columns.
+  function bestColumns(n, maxCols) {
+    let pick = 1, bestRows = Infinity, bestEmpty = Infinity;
+    for (let c = Math.min(n, maxCols); c >= 1; c--) {
+      const rows = Math.ceil(n / c), empty = rows * c - n;
+      if (rows < bestRows || (rows === bestRows && empty < bestEmpty)) { pick = c; bestRows = rows; bestEmpty = empty; }
+    }
+    return pick;
+  }
+
+  // Classes and extracurriculars share a row when that needs fewer rows than stacking them.
+  // Whatever is left over in a last row stretches to fill it, so odd counts leave no hole.
+  function planLayout(n1, n2, maxCols) {
+    const c1s = bestColumns(n1, maxCols), c2s = bestColumns(n2, maxCols);
+    let best = { side: false, c1: c1s, c2: c2s };
+    if (!n1 || !n2) return best;
+    // A tie goes to side by side when a group is small, since stacking would stretch it across the row.
+    let bestRows = Math.ceil(n1 / c1s) + Math.ceil(n2 / c2s) + (Math.min(n1, n2) <= 2 ? 1 : 0);
+    let bestEmpty = Infinity, bestSpan = Infinity;
+    for (let c1 = 1; c1 <= Math.min(n1, maxCols - 1); c1++) {
+      for (let c2 = 1; c2 <= Math.min(n2, maxCols - c1); c2++) {
+        const r1 = Math.ceil(n1 / c1), r2 = Math.ceil(n2 / c2);
+        const rows = Math.max(r1, r2), empty = r1 * c1 - n1 + r2 * c2 - n2, span = c1 + c2;
+        const better = rows < bestRows ||
+          (best.side && rows === bestRows && (empty < bestEmpty || (empty === bestEmpty && span < bestSpan)));
+        if (better) { best = { side: true, c1, c2 }; bestRows = rows; bestEmpty = empty; bestSpan = span; }
+      }
+    }
+    return best;
+  }
+
   function renderClasses() {
     const counts = filterCounts();
     $("class-filters").innerHTML = CLASS_FILTERS.map(c =>
@@ -887,20 +939,38 @@
       return r.shown.length || r.later.length;
     });
 
+    const main = ["class", "extra"]
+      .map(group => ({ group, tags: visibleTags(group) }))
+      .filter(g => g.tags.length || !hideEmpty);
+
+    const maxCols = maxColsFor($("class-cards").clientWidth || 1052);
+    lastMaxCols = maxCols;
+    const count = key => (main.find(g => g.group === key) || { tags: [] }).tags.length;
+    const plan = planLayout(count("class"), count("extra"), maxCols);
+    const cols = { class: plan.c1, extra: plan.c2 };
+    const span = plan.c1 + plan.c2;
+
+    const groupHTML = (label, group, tagList, c, style) =>
+      '<section class="group"' + (style ? ' style="' + style + '"' : "") + ">" +
+      '<div class="section-label">' + label + "</div>" +
+      '<div class="cards-row"' + (group !== "other" ? ' data-group="' + group + '"' : "") + ' style="--c:' + c + '">' +
+      tagList.map(t => cardHTML(t, group)).join("") + "</div></section>";
+
     let html = "";
-    ["class", "extra"].forEach(group => {
-      const tagsHere = visibleTags(group);
-      if (!tagsHere.length && hideEmpty) return;
-      html += '<div class="section-label">' + (group === "class" ? "Classes" : "Extracurriculars") + "</div>";
-      html += '<div class="cards-row" data-group="' + group + '">' + tagsHere.map(t => cardHTML(t, group)).join("") + "</div>";
-      if (!tagsHere.length) html += "";
-    });
+    if (main.length) {
+      html += '<div class="groups ' + (plan.side ? "side" : "stacked") + '">' + main.map(g => {
+        const c = cols[g.group];
+        // Side by side, each group takes a share of the row equal to its column count.
+        const style = plan.side ? "flex: 0 0 calc((100% - " + (span - 1) * CARD_GAP + "px) / " + span + " * " + c + " + " + (c - 1) * CARD_GAP + "px)" : "";
+        return groupHTML(g.group === "class" ? "Classes" : "Extracurriculars", g.group, g.tags, c, style);
+      }).join("") + "</div>";
+    }
 
     const known = new Set(allTags());
     const orphanTags = Array.from(new Set(scoped().filter(t => !known.has(t.tag)).map(t => t.tag)));
     const orphanShown = orphanTags.filter(tag => { const r = cardTasks(tag); return !hideEmpty || r.shown.length || r.later.length; });
     if (orphanShown.length) {
-      html += '<div class="section-label">Other</div><div class="cards-row">' + orphanShown.map(t => cardHTML(t, "other")).join("") + "</div>";
+      html += '<div class="groups stacked">' + groupHTML("Other", "other", orphanShown, bestColumns(orphanShown.length, maxCols), "") + "</div>";
     }
     if (!html) html = '<div class="card"><div class="empty">' + (allTags().length ? "Nothing matches this filter." : "Add a class or extracurricular above to get started. Canvas classes appear after a sync.") + "</div></div>";
     $("class-cards").innerHTML = html;
@@ -1297,6 +1367,14 @@
   setupTagDrag($("tags-panel"), ".tag-chip", ".tag-chip", ".tag-row");
   setupTagDrag($("class-cards"), ".card-head", ".class-card", ".cards-row");
   setupCalendarDrag($("cal-grid"));
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (ui.view === "classes" && maxColsFor($("class-cards").clientWidth) !== lastMaxCols) renderClasses();
+    }, 120);
+  });
 
   loadTheme();
   $("new-date").value = todayISO();
