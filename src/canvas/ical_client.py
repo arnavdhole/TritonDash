@@ -71,10 +71,28 @@ def _extract_course_id(url: str) -> Optional[int]:
     return None
 
 
-def fetch_ical_events(env_var: str = "CANVAS_ICAL_URL") -> list[CanvasEvent]:
+class FeedError(Exception):
+    """A calendar feed could not be fetched or read. The message never contains the feed URL."""
+
+
+def _safe_reason(exc: Exception) -> str:
+    """Short reason for a failed request. requests' own messages include the secret feed URL."""
+    if isinstance(exc, requests.HTTPError) and exc.response is not None:
+        code = exc.response.status_code
+        hint = " (the calendar link was probably regenerated)" if code in (401, 403, 404) else ""
+        return f"HTTP {code}{hint}"
+    if isinstance(exc, requests.Timeout):
+        return "timed out"
+    if isinstance(exc, requests.ConnectionError):
+        return "could not connect"
+    return type(exc).__name__
+
+
+def fetch_ical_events(env_var: str = "CANVAS_ICAL_URL", raise_errors: bool = False) -> list[CanvasEvent]:
     """
     Download and parse a Canvas iCal feed whose URL is stored in `env_var`.
-    Returns a list of CanvasEvents with source="ical".
+    Returns a list of CanvasEvents with source="ical". Failures return [] unless
+    `raise_errors` is set, which raises FeedError so callers can tell them from an empty feed.
     """
     ical_url = os.environ.get(env_var, "").strip()
     if not ical_url:
@@ -90,13 +108,18 @@ def fetch_ical_events(env_var: str = "CANVAS_ICAL_URL") -> list[CanvasEvent]:
         resp = requests.get(ical_url, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as exc:
-        logger.error("Failed to fetch iCal feed: %s", exc)
+        reason = _safe_reason(exc)
+        logger.error("Failed to fetch iCal feed (%s): %s", env_var, reason)
+        if raise_errors:
+            raise FeedError(reason) from None
         return []
 
     try:
         cal = Calendar.from_ical(resp.content)
     except Exception as exc:
-        logger.error("Failed to parse iCal data: %s", exc)
+        logger.error("Failed to parse iCal data (%s): %s", env_var, type(exc).__name__)
+        if raise_errors:
+            raise FeedError("the link did not return a calendar") from None
         return []
 
     events: list[CanvasEvent] = []

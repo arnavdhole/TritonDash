@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 import threading
+from datetime import datetime, timedelta
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -21,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.dashboard_export import EXTENSION_SOURCES, export_dashboard_tasks  # noqa: E402
+from src.dashboard_export import EXTENSION_SOURCES, export_dashboard_report  # noqa: E402
 from src.utils.logger import setup_logging  # noqa: E402
 
 HOST, PORT = "127.0.0.1", 8765
@@ -33,8 +34,63 @@ ALLOWED_ORIGIN_PREFIXES = (
     "moz-extension://",
 )
 MAX_BODY = 1_000_000
+MAX_BACKUP_BODY = 5_000_000
+BACKUP_DIR = ROOT / "data" / "backups"
+BACKUP_KEEP_DAYS = 30
+BACKUP_HISTORY_KEEP = 10
+BACKUP_KEYS = ("tasks", "categories", "aliases", "dismissed", "seeded")
 logger = logging.getLogger("dashboard_server")
 _lock = threading.Lock()
+
+
+def _latest_backup() -> dict | None:
+    path = BACKUP_DIR / "latest.json"
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def _would_lose_data(latest: dict | None, incoming: list) -> bool:
+    """A browser with cleared storage must not replace a real backup with a near-empty one."""
+    old = len(latest.get("tasks", [])) if latest else 0
+    if old == 0:
+        return False
+    if not incoming:
+        return True
+    return old >= 10 and len(incoming) < 0.6 * old
+
+
+def _write_json(path: Path, data: dict) -> None:
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    os.replace(tmp, path)
+
+
+def _task_keys(backup: dict | None) -> set:
+    # Canvas tasks keep a stable canvasId, while other tasks only have the id their browser made.
+    return {t.get("canvasId") or t.get("id") for t in (backup or {}).get("tasks", [])}
+
+
+def _keep_history_if_tasks_vanish(latest: dict | None, incoming: list) -> None:
+    """Before replacing a backup, keep a copy when five or more of its tasks are missing from the new one."""
+    if not latest:
+        return
+    lost = _task_keys(latest) - _task_keys({"tasks": incoming})
+    if len(lost) < 5:
+        return
+    history = BACKUP_DIR / "history"
+    history.mkdir(parents=True, exist_ok=True)
+    _write_json(history / f"before-{datetime.now():%Y%m%d-%H%M%S}.json", latest)
+    for old in sorted(history.glob("before-*.json"))[:-BACKUP_HISTORY_KEEP]:
+        old.unlink()
+
+
+def _prune_backups() -> None:
+    cutoff = datetime.now() - timedelta(days=BACKUP_KEEP_DAYS)
+    for path in BACKUP_DIR.glob("tasks-*.json"):
+        if datetime.fromtimestamp(path.stat().st_mtime) < cutoff:
+            path.unlink()
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -91,9 +147,61 @@ class Handler(SimpleHTTPRequestHandler):
         logger.info("Stored %d %s items", len(items), site)
         self._send_json(200, {"ok": True, "count": len(items)})
 
+    def _save_backup(self) -> None:
+        """Keeps the dashboard's tasks on disk, since the browser's own storage can be cleared."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0 or length > MAX_BACKUP_BODY:
+            self._send_json(400, {"ok": False, "error": "Bad body size"})
+            return
+        try:
+            body = json.loads(self.rfile.read(length))
+            tasks = body["tasks"]
+            if not isinstance(tasks, list) or not all(isinstance(t, dict) for t in tasks):
+                raise ValueError
+            if not isinstance(body["categories"], dict):
+                raise ValueError
+        except (ValueError, KeyError, TypeError):
+            self._send_json(400, {"ok": False, "error": "Bad JSON"})
+            return
+
+        with _lock:
+            latest = _latest_backup()
+            if _would_lose_data(latest, tasks):
+                logger.warning("Refused backup with %d tasks over one with %d", len(tasks), len(latest["tasks"]))
+                self._send_json(409, {
+                    "ok": False,
+                    "error": "this browser has far fewer tasks than the last backup, so the backup was kept. "
+                             "Use Restore from backup if data was lost",
+                })
+                return
+            snapshot = {k: body[k] for k in BACKUP_KEYS if k in body}
+            snapshot["saved"] = datetime.now().isoformat(timespec="seconds")
+            BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+            _keep_history_if_tasks_vanish(latest, tasks)
+            _write_json(BACKUP_DIR / "latest.json", snapshot)
+            _write_json(BACKUP_DIR / f"tasks-{datetime.now():%Y-%m-%d}.json", snapshot)
+            _prune_backups()
+        self._send_json(200, {"ok": True, "count": len(tasks), "saved": snapshot["saved"]})
+
+    def do_GET(self):
+        if self.path.split("?")[0] == "/backup/latest":
+            if not self._origin_allowed():
+                self._send_json(403, {"ok": False, "error": "Forbidden"})
+                return
+            latest = _latest_backup()
+            if latest is None:
+                self._send_json(404, {"ok": False, "error": "No backup yet"})
+            else:
+                self._send_json(200, {"ok": True, **latest})
+            return
+        super().do_GET()
+
     def do_POST(self):
         if not self._origin_allowed():
             self._send_json(403, {"ok": False, "error": "Forbidden"})
+            return
+        if self.path == "/backup":
+            self._save_backup()
             return
         site = self.path.lstrip("/")
         if site in EXTENSION_SOURCES:
@@ -104,12 +212,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         with _lock:
             try:
-                count = export_dashboard_tasks()
+                report = export_dashboard_report()
             except Exception as exc:
                 logger.exception("Refresh failed")
                 self._send_json(500, {"ok": False, "error": str(exc)})
                 return
-        self._send_json(200, {"ok": True, "count": count})
+        self._send_json(200, {"ok": True, **report})
 
     def end_headers(self):
         # The dashboard must always see the freshest canvas_tasks.js.

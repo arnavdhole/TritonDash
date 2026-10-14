@@ -155,12 +155,31 @@ function parseGradescopeAssignments(doc, courseId) {
   return items;
 }
 
+// How many assessment rows the page lists, so the dashboard can say when some had no deadline.
+function countAssessmentRows(doc) {
+  const table = doc.querySelector('table[aria-label="Assessments"]');
+  return table ? table.querySelectorAll('[data-testid="assessment-set-badge"]').length : 0;
+}
+
 // Shared entry point. Chrome calls this from offscreen.js; Firefox calls it from background.js.
 function runParser(type, msg) {
   const doc = new DOMParser().parseFromString(msg.html, "text/html");
   if (type === "parse-courses") return parseCourseList(doc);
   if (type === "parse-assessments") return parseAssessments(doc, msg.instanceId);
+  if (type === "parse-assessments-report") {
+    return {
+      items: parseAssessments(doc, msg.instanceId),
+      rows: countAssessmentRows(doc),
+      hasTable: !!doc.querySelector('table[aria-label="Assessments"]')
+    };
+  }
   if (type === "parse-gradescope-courses") return parseGradescopeCourses(doc);
   if (type === "parse-gradescope-assignments") return parseGradescopeAssignments(doc, msg.courseId);
+  if (type === "parse-gradescope-assignments-report") {
+    return {
+      items: parseGradescopeAssignments(doc, msg.courseId),
+      hasTable: !!doc.querySelector("#assignments-student-table")
+    };
+  }
   return null;
 }

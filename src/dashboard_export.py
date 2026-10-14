@@ -10,6 +10,7 @@ Usage:
 """
 import json
 import logging
+import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -21,7 +22,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).parent.parent
 load_dotenv(dotenv_path=ROOT / ".env")
 
-from src.canvas.ical_client import fetch_ical_events
+from src.canvas.ical_client import FeedError, fetch_ical_events
 from src.utils.logger import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -153,24 +154,64 @@ def build_extension_tasks(config: dict) -> list[dict]:
     return tasks
 
 
-def export_dashboard_tasks() -> int:
-    """Fetch the Canvas feed and write the dashboard file. Returns task count."""
+EXTENSION_LABELS = {"prairielearn": "PrairieLearn", "gradescope": "Gradescope"}
+
+
+def _extension_status(config: dict, extension_tasks: list[dict]) -> list[dict]:
+    """One entry per extension site, based on what the helper has stored so far."""
+    entries = []
+    for site, path in EXTENSION_SOURCES.items():
+        entry = {"label": EXTENSION_LABELS.get(site, site), "kind": "extension", "site": site}
+        if path.exists():
+            kept = sum(1 for t in extension_tasks if t["canvasId"].startswith(site + ":"))
+            updated = datetime.fromtimestamp(path.stat().st_mtime, ZoneInfo(config["timezone"]))
+            entry.update(ok=True, count=kept, updated=updated.isoformat(timespec="seconds"))
+        else:
+            entry.update(ok=False, count=0, error="has never synced")
+        entries.append(entry)
+    return entries
+
+
+def export_dashboard_report() -> dict:
+    """
+    Fetch every Canvas feed and write the dashboard file.
+    Returns {"count": int, "sources": [...]} where each source says whether it worked,
+    so the dashboard can report a broken feed instead of looking like an empty one.
+    """
     config = _load_config()
     tasks = []
-    fetched_any = False
+    sources = []
+    any_feed_ok = False
+
     for source in config["sources"]:
-        events = fetch_ical_events(source["env"])
-        if events:
-            fetched_any = True
-            tasks.extend(build_tasks(events, config, source))
+        entry = {
+            "label": source.get("label") or source.get("tag") or "Canvas",
+            "kind": "calendar",
+            "ok": False,
+            "count": 0,
+        }
+        sources.append(entry)
+        if not os.environ.get(source["env"], "").strip():
+            entry["error"] = source["env"] + " is not set in .env"
+            continue
+        try:
+            events = fetch_ical_events(source["env"], raise_errors=True)
+        except FeedError as exc:
+            entry["error"] = str(exc)
+            continue
+        built = build_tasks(events, config, source)
+        tasks.extend(built)
+        entry.update(ok=True, count=len(built))
+        any_feed_ok = True
 
     extension_tasks = build_extension_tasks(config)
     tasks.extend(extension_tasks)
+    sources.extend(_extension_status(config, extension_tasks))
 
-    if not fetched_any and not extension_tasks:
+    if not any_feed_ok and not extension_tasks:
         # Keep the previous file rather than wiping it after a failed fetch.
-        logger.warning("No events fetched; leaving %s unchanged.", OUTPUT_PATH.name)
-        return 0
+        logger.warning("No source worked; leaving %s unchanged.", OUTPUT_PATH.name)
+        return {"count": 0, "sources": sources}
 
     tasks.sort(key=lambda t: (t["date"], t["name"]))
     payload = {
@@ -181,7 +222,12 @@ def export_dashboard_tasks() -> int:
     OUTPUT_PATH.parent.mkdir(exist_ok=True)
     OUTPUT_PATH.write_text("window.CANVAS_TASKS = " + json.dumps(payload, indent=2) + ";\n")
     logger.info("Wrote %d Canvas tasks to %s", len(tasks), OUTPUT_PATH)
-    return len(tasks)
+    return {"count": len(tasks), "sources": sources}
+
+
+def export_dashboard_tasks() -> int:
+    """Fetch the Canvas feeds and write the dashboard file. Returns task count."""
+    return export_dashboard_report()["count"]
 
 
 if __name__ == "__main__":

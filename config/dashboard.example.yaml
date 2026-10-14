@@ -21,8 +21,10 @@ course_tags:
 # Calendar feeds to pull. "env" names the .env variable that holds the feed URL.
 # A feed with "tag" puts every item under that one tag, which suits a second school.
 # Other feeds derive tags from the course code. "id_prefix" keeps task IDs unique.
+# "label" is the name shown in the refresh report. It defaults to the tag, or "Canvas".
 sources:
   - env: CANVAS_ICAL_URL
+    label: Canvas
   # - env: CANVAS_ICAL_URL_COMMUNITY_COLLEGE
   #   tag: Community College
   #   id_prefix: "cc:"
