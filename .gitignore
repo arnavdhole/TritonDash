@@ -19,3 +19,6 @@ dist/
 build/
 .DS_Store
 data/backups/
+
+# Left by web-ext sign so Mozilla can match later uploads
+extension/.amo-upload-uuid
